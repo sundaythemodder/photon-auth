@@ -1,0 +1,34 @@
+name: auth-server check
+on:
+  push:
+    paths:
+      - "auth-server/**"
+      - ".github/workflows/auth-server-check.yml"
+  pull_request:
+    paths:
+      - "auth-server/**"
+jobs:
+  syntax-check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: auth-server
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Verify server loads
+        env:
+          PLAYFAB_TITLE_ID: "95489"
+          PLAYFAB_SECRET_KEY: "ci-test-key"
+          PORT: "8080"
+        run: |
+          node --check src/server.js
+          node src/server.js &
+          sleep 2
+          curl -sf http://localhost:8080/health
+          curl -sf -X POST http://localhost:8080/ \
+            -H "Content-Type: application/json" \
+            -d '{"UserId":"TEST","AppId":"95489","AppVersion":"live1118","Ticket":"fake","Token":"fake"}' \
+            | grep -q '"ResultCode":2'
